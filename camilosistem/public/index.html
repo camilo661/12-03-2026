@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CamiloSistem – Gestión de Pedidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3e;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --radius: 10px;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-head);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 10px;
+  }
+  .logo h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { font-size: 11px; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; }
+
+  .nav { flex: 1; padding: 16px 0; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); font-family: var(--font-mono); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border-left: 3px solid transparent;
+    transition: all .2s; color: var(--text2);
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { border-left-color: var(--accent); color: var(--text); background: rgba(124,58,237,.12); }
+  .nav-item .badge {
+    margin-left: auto; background: var(--accent);
+    color: #fff; font-size: 10px; padding: 2px 7px;
+    border-radius: 99px; font-family: var(--font-mono);
+  }
+
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .user-chip { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  .user-info p { font-size: 13px; font-weight: 700; }
+  .user-info span { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+
+  /* ─── MAIN ─── */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar h2 { font-size: 18px; font-weight: 800; }
+  .topbar-actions { display: flex; gap: 10px; }
+
+  .content { padding: 28px; flex: 1; }
+
+  /* ─── STATS ─── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px; margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    position: relative; overflow: hidden;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--accent); }
+  .stat-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+  }
+  .stat-card.violet::before { background: var(--accent); }
+  .stat-card.cyan::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--accent3); }
+  .stat-card.amber::before { background: var(--warn); }
+  .stat-card.red::before { background: var(--danger); }
+  .stat-icon { font-size: 24px; margin-bottom: 10px; }
+  .stat-val { font-size: 28px; font-weight: 800; font-family: var(--font-mono); }
+  .stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* ─── TABLE ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-header h3 { font-size: 15px; font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 12px 16px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--text3); font-family: var(--font-mono);
+    border-bottom: 1px solid var(--border);
+  }
+  td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ─── STATUS BADGE ─── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+  .status-badge::before { content: '●'; font-size: 8px; }
+  .s-pending { background: rgba(245,158,11,.15); color: var(--warn); }
+  .s-active  { background: rgba(6,182,212,.15); color: var(--accent2); }
+  .s-done    { background: rgba(16,185,129,.15); color: var(--accent3); }
+  .s-cancel  { background: rgba(239,68,68,.15); color: var(--danger); }
+  .s-review  { background: rgba(124,58,237,.15); color: var(--accent); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 7px;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; transition: all .2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-cyan { background: var(--accent2); color: #0a0a0f; }
+  .btn-green { background: var(--accent3); color: #0a0a0f; }
+  .btn-warn { background: var(--warn); color: #0a0a0f; }
+  .btn-danger { background: var(--danger); color: #fff; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 90%; max-width: 580px;
+    max-height: 85vh; overflow-y: auto;
+    padding: 28px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .modal h3 { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+  .modal-close { float: right; background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; }
+
+  /* ─── FORM ─── */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--text3); margin-bottom: 6px; font-family: var(--font-mono); }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--text);
+    font-family: var(--font-head); font-size: 14px;
+    transition: border-color .2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ─── PROCESS FLOW ─── */
+  .process-flow { padding: 20px; }
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 16px 0;
+  }
+  .flow-step:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .step-indicator {
+    width: 36px; height: 36px; min-width: 36px;
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 700;
+    font-family: var(--font-mono);
+  }
+  .step-done { background: rgba(16,185,129,.2); color: var(--accent3); border: 1px solid var(--accent3); }
+  .step-active { background: rgba(124,58,237,.2); color: var(--accent); border: 1px solid var(--accent); animation: pulse 1.5s infinite; }
+  .step-pending { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.4); } 50% { box-shadow: 0 0 0 8px rgba(124,58,237,0); } }
+  .step-info h4 { font-size: 14px; font-weight: 700; }
+  .step-info p { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .step-role {
+    margin-left: auto; font-size: 10px; padding: 3px 8px;
+    border-radius: 99px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text3);
+    font-family: var(--font-mono); white-space: nowrap;
+  }
+
+  /* ─── TABS ─── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 700;
+    cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent;
+    transition: all .2s; margin-bottom: -1px;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── DETAIL PANEL ─── */
+  .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
+  .detail-val { font-size: 13px; font-weight: 600; }
+
+  /* ─── HISTORY ─── */
+  .history-entry { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+  .history-dot { width: 10px; height: 10px; min-width: 10px; border-radius: 50%; background: var(--accent); margin-top: 4px; }
+  .history-entry p { font-size: 13px; }
+  .history-entry span { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+
+  /* ─── EMPTY STATE ─── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty h3 { font-size: 18px; color: var(--text2); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .hidden { display: none !important; }
+  .flex { display: flex; }
+  .gap-2 { gap: 8px; }
+  .ml-auto { margin-left: auto; }
+  .text-green { color: var(--accent3); }
+  .text-red { color: var(--danger); }
+  .text-amber { color: var(--warn); }
+  .font-mono { font-family: var(--font-mono); }
+  .text-xs { font-size: 11px; color: var(--text3); }
+
+  select option { background: var(--surface2); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🛒</div>
+    <h1>CamiloSistem</h1>
+    <span>Gestión de Pedidos v1.0</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">📊 Dashboard</div>
+    <div class="nav-item" onclick="showPage('orders')">📦 Pedidos <span class="badge" id="badge-orders">0</span></div>
+    <div class="nav-item" onclick="showPage('quotes')">💬 Cotizaciones</div>
+    <div class="nav-item" onclick="showPage('invoices')">🧾 Facturas</div>
+    <div class="nav-section">Operaciones</div>
+    <div class="nav-item" onclick="showPage('flow')">🔄 Flujo de Proceso</div>
+    <div class="nav-item" onclick="showPage('users')">👥 Usuarios</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">CS</div>
+      <div class="user-info">
+        <p>Admin</p>
+        <span>SHIPPING_OFFICE</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <header class="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Actualizar</button>
+      <button class="btn btn-primary" onclick="openModal('modal-new-order')">+ Nuevo Pedido</button>
+    </div>
+  </header>
+
+  <div class="content" id="content">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="card">
+        <div class="card-header">
+          <h3>📦 Pedidos Recientes</h3>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('orders')">Ver todos →</button>
+        </div>
+        <div id="recent-orders-table"></div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div id="page-orders" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3>Todos los Pedidos</h3>
+          <div class="flex gap-2">
+            <select id="filter-status" class="btn btn-ghost btn-sm" style="padding:5px 10px;" onchange="renderOrders()">
+              <option value="">Todos los estados</option>
+              <option value="COMPLETADO">Completados</option>
+              <option value="CANCELADO">Cancelados</option>
+            </select>
+          </div>
+        </div>
+        <div id="orders-table"></div>
+      </div>
+    </div>
+
+    <!-- QUOTES -->
+    <div id="page-quotes" class="hidden">
+      <div class="card">
+        <div class="card-header"><h3>Cotizaciones</h3></div>
+        <div id="quotes-table"></div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div id="page-invoices" class="hidden">
+      <div class="card">
+        <div class="card-header"><h3>Facturas</h3></div>
+        <div id="invoices-table"></div>
+      </div>
+    </div>
+
+    <!-- PROCESS FLOW -->
+    <div id="page-flow" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3>Diagrama de Flujo de Proceso</h3>
+          <span class="text-xs font-mono">Basado en el diagrama de gestión de pedidos</span>
+        </div>
+        <div class="process-flow">
+          <div class="flow-steps" id="process-steps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users" class="hidden">
+      <div class="card">
+        <div class="card-header"><h3>Usuarios del Sistema</h3></div>
+        <div id="users-table"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ─────────────── MODALS ─────────────── -->
+
+<!-- NEW ORDER -->
+<div class="modal-overlay" id="modal-new-order">
+  <div class="modal">
+    <h3>📦 Nuevo Pedido <button class="modal-close" onclick="closeModal('modal-new-order')">✕</button></h3>
+    <div class="form-group">
+      <label>Notas de Requisición</label>
+      <textarea id="new-order-notes" placeholder="Descripción del pedido..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Producto 1</label>
+      <div class="form-row">
+        <input id="p1-name" placeholder="Nombre del producto" />
+        <input id="p1-qty" type="number" placeholder="Cantidad" value="1" min="1" />
+      </div>
+      <input id="p1-price" type="number" placeholder="Precio unitario" style="margin-top:8px;width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font-head);font-size:14px;" />
+    </div>
+    <div class="flex gap-2" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-order')">Cancelar</button>
+      <button class="btn btn-primary ml-auto" onclick="createNewOrder()">Crear Pedido →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER DETAIL -->
+<div class="modal-overlay" id="modal-order-detail">
+  <div class="modal" style="max-width:680px;">
+    <h3 id="detail-title">Detalle del Pedido <button class="modal-close" onclick="closeModal('modal-order-detail')">✕</button></h3>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('detail')">Detalles</div>
+      <div class="tab" onclick="switchTab('actions')">Acciones</div>
+      <div class="tab" onclick="switchTab('history')">Historial</div>
+    </div>
+    <div id="tab-detail" class="tab-panel active"></div>
+    <div id="tab-actions" class="tab-panel"></div>
+    <div id="tab-history" class="tab-panel"></div>
+  </div>
+</div>
+
+<!-- QUICK ACTION -->
+<div class="modal-overlay" id="modal-action">
+  <div class="modal">
+    <h3 id="action-title">Acción <button class="modal-close" onclick="closeModal('modal-action')">✕</button></h3>
+    <div id="action-body"></div>
+    <div class="flex gap-2" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-action')">Cancelar</button>
+      <button class="btn btn-primary ml-auto" id="action-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// TYPESCRIPT MODELS → compilados a JS inline
+// (En producción, compilar con tsc. Aquí ejecutamos JS equivalente.)
+// ══════════════════════════════════════════════════════
+
+let nextId = 10;
+let orders = [];
+let users = [
+  { id:'U001', name:'Carlos Martínez', role:'SHIPPING_OFFICE', email:'carlos@camilosistem.com' },
+  { id:'U002', name:'Ana López',        role:'BUYER_AGENT',     email:'ana@camilosistem.com' },
+  { id:'U003', name:'Roberto Silva',    role:'SUPERVISOR',      email:'roberto@camilosistem.com' },
+  { id:'U004', name:'María González',   role:'SELLER',          email:'maria@camilosistem.com' },
+  { id:'U005', name:'Juan Pérez',       role:'RECEIVE_AGENT',   email:'juan@camilosistem.com' },
+];
+
+// ── HELPERS ──
+function uid(prefix){ return `${prefix}-${String(++nextId).padStart(4,'0')}`; }
+function now(){ return new Date(); }
+function fmt(d){ return d ? new Date(d).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '–'; }
+function fmtMoney(n){ return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0); }
+
+function addHistory(order, action, notes, userId, role){
+  order.history.push({ id:uid('HIS'), action, notes, performedBy:userId||'SYSTEM', role:role||'SYSTEM', timestamp:new Date() });
+  order.updatedAt = new Date();
+}
+
+function transition(order, newStatus, notes, userId, role){
+  addHistory(order, `${order.status} → ${newStatus}`, notes, userId, role);
+  order.status = newStatus;
+}
+
+// ── ORDER SERVICE ──
+const OS = {
+  prepareRequisition(shippingId, items, notes){
+    const o = {
+      id: uid('ORD'),
+      requisitionNumber: `REQ-${Date.now()}`,
+      status: 'REQUISICION_PREPARADA',
+      buyerAgentId:'', buyerAgentName:'',
+      shippingOfficeId: shippingId,
+      supervisorId:null, sellerId:null, receiveAgentId:null,
+      items, quotes:[], selectedQuoteId:null,
+      invoice:null, deliveryNote:null,
+      needsReview:false, supervisorApproved:null,
+      quoteAcceptable:null, orderAcceptable:null,
+      totalAmount: items.reduce((s,i)=>s+i.totalPrice,0),
+      notes, createdAt:new Date(), updatedAt:new Date(),
+      history:[{ id:uid('HIS'), action:'Requisición creada', notes, performedBy:shippingId, role:'SHIPPING_OFFICE', timestamp:new Date() }]
+    };
+    orders.unshift(o);
+    return o;
+  },
+  prepareRFQ(orderId, buyerAgentId, buyerAgentName, needsReview){
+    const o=getO(orderId);
+    o.buyerAgentId=buyerAgentId; o.buyerAgentName=buyerAgentName; o.needsReview=needsReview;
+    transition(o, needsReview?'EVALUACION_COTIZACION':'SOLICITUD_COTIZACION', `RFQ preparado. Revisión: ${needsReview}`, buyerAgentId,'BUYER_AGENT');
+    return o;
+  },
+  supervisorApprove(orderId, supId, approved, notes){
+    const o=getO(orderId); o.supervisorId=supId; o.supervisorApproved=approved;
+    transition(o, approved?'SOLICITUD_COTIZACION':'CANCELADO', notes, supId,'SUPERVISOR');
+    return o;
+  },
+  sellerDecide(orderId, sellerId, willQuote){
+    const o=getO(orderId); o.sellerId=sellerId;
+    transition(o, willQuote?'PREPARACION_COTIZACION_ACTUAL':'CANCELADO', willQuote?'Decidió cotizar':'No cotizará', sellerId,'SELLER');
+    return o;
+  },
+  prepareQuote(orderId, sellerId, quoteItems, taxPct, notes){
+    const o=getO(orderId);
+    const sub=quoteItems.reduce((s,i)=>s+i.totalPrice,0);
+    const tax=sub*taxPct/100;
+    const q={ id:uid('QUO'), orderId, sellerId, items:quoteItems, subtotal:sub, tax, total:sub+tax,
+              status:'ENVIADA', notes, createdAt:new Date(), updatedAt:new Date() };
+    o.quotes.push(q);
+    transition(o,'ANALISIS_RESPUESTA_COTIZACION','Cotización preparada',sellerId,'SELLER');
+    return o;
+  },
+  analyzeQuote(orderId, buyerId){
+    const o=getO(orderId);
+    transition(o,'REVISION_COTIZACION_ACTUAL','Analizando cotización',buyerId,'BUYER_AGENT');
+    return o;
+  },
+  reviewQuote(orderId, quoteId, buyerId, acceptable, notes){
+    const o=getO(orderId); o.quoteAcceptable=acceptable;
+    const q=o.quotes.find(x=>x.id===quoteId);
+    if(q){ q.status=acceptable?'ACEPTADA':'RECHAZADA'; q.updatedAt=new Date(); if(acceptable) o.selectedQuoteId=quoteId; }
+    transition(o, acceptable?'PREPARACION_PEDIDO':'PREPARACION_COTIZACION_ACTUAL', notes, buyerId,'BUYER_AGENT');
+    return o;
+  },
+  prepareOrder(orderId, buyerId){
+    const o=getO(orderId);
+    transition(o,'REVISION_PEDIDO','Pedido preparado para revisión del vendedor',buyerId,'BUYER_AGENT');
+    return o;
+  },
+  sellerReviewOrder(orderId, sellerId, acceptable, notes){
+    const o=getO(orderId); o.orderAcceptable=acceptable;
+    transition(o, acceptable?'CUMPLIMIENTO_PEDIDO':'PREPARACION_PEDIDO', notes, sellerId,'SELLER');
+    return o;
+  },
+  fulfillOrder(orderId, sellerId){
+    const o=getO(orderId);
+    transition(o,'PREPARACION_FACTURA','Procesando cumplimiento del pedido',sellerId,'SELLER');
+    return o;
+  },
+  prepareInvoice(orderId, sellerId){
+    const o=getO(orderId);
+    const q=o.quotes.find(x=>x.id===o.selectedQuoteId);
+    o.invoice={ id:uid('INV'), orderId, quoteId:o.selectedQuoteId||'', buyerName:o.buyerAgentName,
+      items:q?.items||o.items, subtotal:q?.subtotal||o.totalAmount, tax:q?.tax||0, total:q?.total||o.totalAmount,
+      status:'PENDIENTE', issuedAt:new Date() };
+    transition(o,'RECIBIR_PAGO','Factura preparada',sellerId,'SELLER');
+    return o;
+  },
+  receivePayment(orderId, sellerId){
+    const o=getO(orderId);
+    if(o.invoice){ o.invoice.status='PAGADA'; o.invoice.paidAt=new Date(); }
+    transition(o,'PRODUCTO_RECIBIDO','Pago recibido',sellerId,'SELLER');
+    return o;
+  },
+  confirmReceived(orderId, agentId, address){
+    const o=getO(orderId); o.receiveAgentId=agentId;
+    o.deliveryNote={ id:uid('DEL'), orderId, items:o.items, deliveryAddress:address, estimatedDate:new Date(), actualDate:new Date(), status:'ENTREGADO', notes:'Entregado' };
+    transition(o,'COMPLETADO','Producto recibido. Pedido completado.',agentId,'RECEIVE_AGENT');
+    return o;
+  }
+};
+
+function getO(id){ const o=orders.find(x=>x.id===id); if(!o) throw new Error('Pedido no encontrado'); return o; }
+
+// ── STATUS CONFIG ──
+const STATUS_CONFIG = {
+  REQUISICION_PREPARADA:       { label:'Requisición', cls:'s-pending', step:1 },
+  SOLICITUD_COTIZACION:        { label:'Solicitud RFQ', cls:'s-active', step:2 },
+  EVALUACION_COTIZACION:       { label:'Evaluación', cls:'s-review', step:2 },
+  APROBADO:                    { label:'Aprobado', cls:'s-done', step:3 },
+  CANCELADO:                   { label:'Cancelado', cls:'s-cancel', step:0 },
+  PREPARACION_COTIZACION_ACTUAL:{ label:'Prep. Cotización', cls:'s-active', step:4 },
+  ANALISIS_RESPUESTA_COTIZACION:{ label:'Análisis Cotización', cls:'s-active', step:5 },
+  REVISION_COTIZACION_ACTUAL:  { label:'Revisión Cotización', cls:'s-review', step:5 },
+  PREPARACION_PEDIDO:          { label:'Prep. Pedido', cls:'s-active', step:6 },
+  REVISION_PEDIDO:             { label:'Revisión Pedido', cls:'s-review', step:7 },
+  CUMPLIMIENTO_PEDIDO:         { label:'Cumplimiento', cls:'s-active', step:8 },
+  PREPARACION_FACTURA:         { label:'Preparando Factura', cls:'s-active', step:9 },
+  RECIBIR_PAGO:                { label:'Esperando Pago', cls:'s-active', step:10 },
+  PRODUCTO_RECIBIDO:           { label:'En Entrega', cls:'s-active', step:11 },
+  COMPLETADO:                  { label:'Completado', cls:'s-done', step:12 },
+};
+
+const ROLE_LABELS = {
+  SHIPPING_OFFICE:'🚢 Shipping', BUYER_AGENT:'🛒 Comprador',
+  SUPERVISOR:'👔 Supervisor', SELLER:'🏪 Vendedor', RECEIVE_AGENT:'📬 Recepción'
+};
+
+// ── INIT ──
+function seedOrders(){
+  // Demo order 1 - completed
+  const items1=[{ id:uid('I'),productId:'P1',productName:'Laptop Dell XPS 15',quantity:2,unitPrice:4800000,totalPrice:9600000 },
+                { id:uid('I'),productId:'P2',productName:'Monitor 27" 4K',quantity:3,unitPrice:1200000,totalPrice:3600000 }];
+  const o1=OS.prepareRequisition('U001',items1,'Equipos para área de diseño');
+  OS.prepareRFQ(o1.id,'U002','Ana López',false);
+  OS.sellerDecide(o1.id,'U004',true);
+  OS.prepareQuote(o1.id,'U004',items1,19,'Cotización con IVA incluido');
+  OS.analyzeQuote(o1.id,'U002');
+  OS.reviewQuote(o1.id,o1.quotes[0].id,'U002',true,'Cotización dentro del presupuesto');
+  OS.prepareOrder(o1.id,'U002');
+  OS.sellerReviewOrder(o1.id,'U004',true,'Disponibilidad confirmada');
+  OS.fulfillOrder(o1.id,'U004');
+  OS.prepareInvoice(o1.id,'U004');
+  OS.receivePayment(o1.id,'U004');
+  OS.confirmReceived(o1.id,'U005','Cra 7 #45-12, Bogotá');
+
+  // Demo order 2 - in progress
+  const items2=[{ id:uid('I'),productId:'P3',productName:'Teclado Mecánico RGB',quantity:10,unitPrice:280000,totalPrice:2800000 }];
+  const o2=OS.prepareRequisition('U001',items2,'Renovación de teclados equipo dev');
+  OS.prepareRFQ(o2.id,'U002','Ana López',true);
+  OS.supervisorApprove(o2.id,'U003',true,'Dentro del presupuesto trimestral');
+  OS.sellerDecide(o2.id,'U004',true);
+  OS.prepareQuote(o2.id,'U004',items2,19,'Precio de temporada');
+  OS.analyzeQuote(o2.id,'U002');
+
+  // Demo order 3 - requisition stage
+  const items3=[{ id:uid('I'),productId:'P4',productName:'Silla Ergonómica',quantity:5,unitPrice:950000,totalPrice:4750000 }];
+  OS.prepareRequisition('U001',items3,'Sillas para sala de juntas');
+}
+
+// ── PAGES ──
+let currentPage = 'dashboard';
+function showPage(page){
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.textContent.toLowerCase().includes(
+      page==='dashboard'?'dashboard':page==='orders'?'pedidos':page==='quotes'?'cotizaciones':page==='invoices'?'factura':page==='flow'?'flujo':page==='users'?'usuario':''
+    ));
+  });
+  document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById(`page-${page}`)?.classList.remove('hidden');
+  const titles={dashboard:'Dashboard',orders:'Pedidos',quotes:'Cotizaciones',invoices:'Facturas',flow:'Flujo de Proceso',users:'Usuarios'};
+  document.getElementById('page-title').textContent = titles[page]||page;
+  renderPage(page);
+}
+
+function renderPage(page){
+  if(page==='dashboard') renderDashboard();
+  else if(page==='orders') renderOrders();
+  else if(page==='quotes') renderQuotes();
+  else if(page==='invoices') renderInvoices();
+  else if(page==='flow') renderFlow();
+  else if(page==='users') renderUsers();
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  const stats = getStats();
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card violet"><div class="stat-icon">📦</div><div class="stat-val">${stats.total}</div><div class="stat-label">Total Pedidos</div></div>
+    <div class="stat-card cyan"><div class="stat-icon">🔄</div><div class="stat-val">${stats.pending}</div><div class="stat-label">En Proceso</div></div>
+    <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-val">${stats.completed}</div><div class="stat-label">Completados</div></div>
+    <div class="stat-card amber"><div class="stat-icon">💬</div><div class="stat-val">${stats.quotes}</div><div class="stat-label">Cotizaciones</div></div>
+    <div class="stat-card green"><div class="stat-icon">💰</div><div class="stat-val font-mono" style="font-size:18px;">${fmtMoney(stats.revenue)}</div><div class="stat-label">Ingresos Totales</div></div>
+    <div class="stat-card red"><div class="stat-icon">❌</div><div class="stat-val">${stats.cancelled}</div><div class="stat-label">Cancelados</div></div>
+  `;
+  document.getElementById('badge-orders').textContent = stats.pending;
+  renderOrdersTable(document.getElementById('recent-orders-table'), orders.slice(0,5));
+}
+
+function getStats(){
+  return {
+    total: orders.length,
+    pending: orders.filter(o=>!['COMPLETADO','CANCELADO'].includes(o.status)).length,
+    completed: orders.filter(o=>o.status==='COMPLETADO').length,
+    cancelled: orders.filter(o=>o.status==='CANCELADO').length,
+    revenue: orders.filter(o=>o.status==='COMPLETADO').reduce((s,o)=>s+(o.invoice?.total||o.totalAmount),0),
+    quotes: orders.filter(o=>['SOLICITUD_COTIZACION','PREPARACION_COTIZACION_ACTUAL','ANALISIS_RESPUESTA_COTIZACION','REVISION_COTIZACION_ACTUAL'].includes(o.status)).length,
+  };
+}
+
+// ── ORDERS TABLE ──
+function renderOrders(){
+  const filter=document.getElementById('filter-status')?.value||'';
+  const filtered=filter?orders.filter(o=>o.status===filter):orders;
+  renderOrdersTable(document.getElementById('orders-table'), filtered);
+}
+
+function renderOrdersTable(container, list){
+  if(!container) return;
+  if(!list.length){ container.innerHTML='<div class="empty"><div class="icon">📭</div><h3>No hay pedidos</h3></div>'; return; }
+  const cfg=STATUS_CONFIG;
+  container.innerHTML=`<table><thead><tr>
+    <th>ID</th><th>Requisición</th><th>Comprador</th><th>Estado</th><th>Total</th><th>Fecha</th><th>Acciones</th>
+  </tr></thead><tbody>${list.map(o=>`
+    <tr>
+      <td class="font-mono" style="font-size:12px;">${o.id}</td>
+      <td class="font-mono" style="font-size:11px;">${o.requisitionNumber}</td>
+      <td>${o.buyerAgentName||'—'}</td>
+      <td><span class="status-badge ${cfg[o.status]?.cls||'s-pending'}">${cfg[o.status]?.label||o.status}</span></td>
+      <td class="font-mono">${fmtMoney(o.invoice?.total||o.totalAmount)}</td>
+      <td style="font-size:12px;color:var(--text3);">${fmt(o.createdAt)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openOrderDetail('${o.id}')">Ver →</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── QUOTES ──
+function renderQuotes(){
+  const allQuotes=orders.flatMap(o=>o.quotes.map(q=>({...q,orderId:o.id})));
+  const el=document.getElementById('quotes-table');
+  if(!allQuotes.length){ el.innerHTML='<div class="empty"><div class="icon">💬</div><h3>No hay cotizaciones</h3></div>'; return; }
+  el.innerHTML=`<table><thead><tr><th>ID</th><th>Pedido</th><th>Vendedor</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th></tr></thead>
+  <tbody>${allQuotes.map(q=>`<tr>
+    <td class="font-mono" style="font-size:11px;">${q.id}</td>
+    <td class="font-mono" style="font-size:11px;">${q.orderId}</td>
+    <td>${users.find(u=>u.id===q.sellerId)?.name||q.sellerId}</td>
+    <td class="font-mono">${fmtMoney(q.subtotal)}</td>
+    <td class="font-mono">${fmtMoney(q.tax)}</td>
+    <td class="font-mono" style="color:var(--accent3);">${fmtMoney(q.total)}</td>
+    <td><span class="status-badge ${q.status==='ACEPTADA'?'s-done':q.status==='RECHAZADA'?'s-cancel':'s-pending'}">${q.status}</span></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ── INVOICES ──
+function renderInvoices(){
+  const invs=orders.filter(o=>o.invoice).map(o=>o.invoice);
+  const el=document.getElementById('invoices-table');
+  if(!invs.length){ el.innerHTML='<div class="empty"><div class="icon">🧾</div><h3>No hay facturas</h3></div>'; return; }
+  el.innerHTML=`<table><thead><tr><th>ID Factura</th><th>Pedido</th><th>Cliente</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th><th>Emitida</th></tr></thead>
+  <tbody>${invs.map(inv=>`<tr>
+    <td class="font-mono" style="font-size:11px;">${inv.id}</td>
+    <td class="font-mono" style="font-size:11px;">${inv.orderId}</td>
+    <td>${inv.buyerName||'—'}</td>
+    <td class="font-mono">${fmtMoney(inv.subtotal)}</td>
+    <td class="font-mono">${fmtMoney(inv.tax)}</td>
+    <td class="font-mono" style="color:var(--accent3);font-weight:700;">${fmtMoney(inv.total)}</td>
+    <td><span class="status-badge ${inv.status==='PAGADA'?'s-done':inv.status==='CANCELADA'?'s-cancel':'s-pending'}">${inv.status}</span></td>
+    <td style="font-size:12px;color:var(--text3);">${fmt(inv.issuedAt)}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ── FLOW ──
+function renderFlow(){
+  const steps=[
+    { n:1, title:'Preparar Requisición', desc:'Shipping Office genera la solicitud inicial de productos.', role:'SHIPPING_OFFICE' },
+    { n:2, title:'Preparar Solicitud de Cotización (RFQ)', desc:'Buyer Agent elabora el Request for Quotation (RFQ). ¿Necesita revisión del supervisor?', role:'BUYER_AGENT' },
+    { n:3, title:'Evaluación por Supervisor', desc:'Supervisor evalúa la cotización y decide si aprobarla. Si no, se cancela.', role:'SUPERVISOR', optional:true },
+    { n:4, title:'Revisión por Vendedor', desc:'Vendedor revisa la solicitud y decide si va a cotizar.', role:'SELLER' },
+    { n:5, title:'Preparar Cotización Real', desc:'Vendedor elabora la cotización formal con precios y condiciones.', role:'SELLER' },
+    { n:6, title:'Analizar Respuesta de Cotización', desc:'Buyer Agent analiza la respuesta recibida.', role:'BUYER_AGENT' },
+    { n:7, title:'Revisión de Cotización Actual', desc:'¿La cotización es aceptable? Si no, se solicita una nueva al vendedor.', role:'BUYER_AGENT' },
+    { n:8, title:'Preparación del Pedido', desc:'Con cotización aceptada, se prepara el pedido formal.', role:'BUYER_AGENT' },
+    { n:9, title:'Revisión del Pedido (Seller)', desc:'Vendedor revisa el pedido. ¿Es aceptable? Si no, regresa a preparación.', role:'SELLER' },
+    { n:10, title:'Cumplimiento del Pedido', desc:'Vendedor procede a cumplir el pedido y prepara la factura.', role:'SELLER' },
+    { n:11, title:'Recibir Pago del Cliente', desc:'Seller confirma el pago recibido del cliente.', role:'SELLER' },
+    { n:12, title:'Confirmar Producto Recibido', desc:'Receive Agent confirma la entrega. Pedido completado.', role:'RECEIVE_AGENT' },
+  ];
+  document.getElementById('process-steps').innerHTML=steps.map(s=>`
+    <div class="flow-step">
+      <div class="step-indicator step-pending">${s.n}</div>
+      <div class="step-info">
+        <h4>${s.title}</h4>
+        <p>${s.desc}</p>
+      </div>
+      <span class="step-role">${ROLE_LABELS[s.role]||s.role}</span>
+    </div>`).join('');
+}
+
+// ── USERS ──
+function renderUsers(){
+  document.getElementById('users-table').innerHTML=`<table><thead><tr><th>ID</th><th>Nombre</th><th>Rol</th><th>Email</th></tr></thead>
+  <tbody>${users.map(u=>`<tr>
+    <td class="font-mono" style="font-size:11px;">${u.id}</td>
+    <td>${u.name}</td>
+    <td><span class="status-badge s-review">${ROLE_LABELS[u.role]||u.role}</span></td>
+    <td style="font-size:12px;color:var(--text3);">${u.email}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ── ORDER DETAIL MODAL ──
+let currentOrderId = null;
+function openOrderDetail(orderId){
+  currentOrderId = orderId;
+  const o = getO(orderId);
+  document.getElementById('detail-title').innerHTML = `${o.id} <button class="modal-close" onclick="closeModal('modal-order-detail')">✕</button>`;
+  renderDetailTabs(o);
+  openModal('modal-order-detail');
+}
+
+function renderDetailTabs(o){
+  const cfg=STATUS_CONFIG;
+  // DETAILS
+  const q=o.quotes.find(x=>x.id===o.selectedQuoteId)||o.quotes[o.quotes.length-1];
+  document.getElementById('tab-detail').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div>
+        <div class="detail-row"><span class="detail-key">Estado</span><span class="detail-val"><span class="status-badge ${cfg[o.status]?.cls||'s-pending'}">${cfg[o.status]?.label||o.status}</span></span></div>
+        <div class="detail-row"><span class="detail-key">Requisición</span><span class="detail-val font-mono" style="font-size:12px;">${o.requisitionNumber}</span></div>
+        <div class="detail-row"><span class="detail-key">Comprador</span><span class="detail-val">${o.buyerAgentName||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Creado</span><span class="detail-val">${fmt(o.createdAt)}</span></div>
+      </div>
+      <div>
+        <div class="detail-row"><span class="detail-key">Cotizaciones</span><span class="detail-val">${o.quotes.length}</span></div>
+        <div class="detail-row"><span class="detail-key">Total Cotizado</span><span class="detail-val font-mono text-green">${fmtMoney(q?.total||o.totalAmount)}</span></div>
+        <div class="detail-row"><span class="detail-key">Factura</span><span class="detail-val">${o.invoice?`<span class="status-badge ${o.invoice.status==='PAGADA'?'s-done':'s-pending'}">${o.invoice.status}</span>`:'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Notas</span><span class="detail-val" style="font-size:12px;">${o.notes||'—'}</span></div>
+      </div>
+    </div>
+    <h4 style="margin-bottom:10px;font-size:14px;">Ítems del Pedido</h4>
+    <table><thead><tr><th>Producto</th><th>Cant.</th><th>Precio Unit.</th><th>Total</th></tr></thead>
+    <tbody>${o.items.map(i=>`<tr><td>${i.productName}</td><td class="font-mono">${i.quantity}</td><td class="font-mono">${fmtMoney(i.unitPrice)}</td><td class="font-mono text-green">${fmtMoney(i.totalPrice)}</td></tr>`).join('')}</tbody></table>`;
+
+  // ACTIONS
+  document.getElementById('tab-actions').innerHTML = getActionsHTML(o);
+
+  // HISTORY
+  document.getElementById('tab-history').innerHTML = o.history.length
+    ? o.history.slice().reverse().map(h=>`<div class="history-entry"><div class="history-dot"></div><div><p>${h.action}</p><p style="color:var(--text3);font-size:11px;margin-top:2px;">${h.notes}</p><span>${ROLE_LABELS[h.role]||h.role} · ${fmt(h.timestamp)}</span></div></div>`).join('')
+    : '<div class="empty"><p>Sin historial</p></div>';
+}
+
+function getActionsHTML(o){
+  const actions = getAvailableActions(o);
+  if(!actions.length) return `<div class="empty"><div class="icon">${o.status==='COMPLETADO'?'✅':'❌'}</div><h3>No hay acciones disponibles</h3></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:10px;">${actions.map(a=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <p style="font-weight:700;margin-bottom:4px;">${a.label}</p>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px;">${a.desc}</p>
+      <button class="btn btn-sm ${a.cls}" onclick="${a.fn}">${a.btnLabel}</button>
+    </div>`).join('')}</div>`;
+}
+
+function getAvailableActions(o){
+  const a=[];
+  if(o.status==='REQUISICION_PREPARADA') a.push({ label:'Preparar RFQ (Comprador)', desc:'El buyer agent prepara la solicitud de cotización.', cls:'btn-cyan', btnLabel:'Preparar RFQ', fn:`quickAction('rfq','${o.id}')` });
+  if(o.status==='EVALUACION_COTIZACION') a.push({ label:'Aprobación Supervisor', desc:'El supervisor debe evaluar y aprobar o rechazar.', cls:'btn-warn', btnLabel:'Evaluar', fn:`quickAction('supervisor','${o.id}')` });
+  if(o.status==='SOLICITUD_COTIZACION') a.push({ label:'Decisión Vendedor', desc:'El vendedor decide si cotizará el pedido.', cls:'btn-primary', btnLabel:'Decidir', fn:`quickAction('seller_decide','${o.id}')` });
+  if(o.status==='PREPARACION_COTIZACION_ACTUAL') a.push({ label:'Preparar Cotización', desc:'El vendedor elabora la cotización formal.', cls:'btn-primary', btnLabel:'Cotizar', fn:`quickAction('quote','${o.id}')` });
+  if(o.status==='ANALISIS_RESPUESTA_COTIZACION') a.push({ label:'Revisar Cotización', desc:'El comprador revisa si la cotización es aceptable.', cls:'btn-cyan', btnLabel:'Revisar', fn:`quickAction('review_quote','${o.id}')` });
+  if(o.status==='REVISION_COTIZACION_ACTUAL') a.push({ label:'Decisión sobre Cotización', desc:'¿La cotización es aceptable?', cls:'btn-warn', btnLabel:'Decidir', fn:`quickAction('accept_quote','${o.id}')` });
+  if(o.status==='PREPARACION_PEDIDO') a.push({ label:'Enviar Pedido al Vendedor', desc:'El comprador envía el pedido formal al vendedor.', cls:'btn-cyan', btnLabel:'Enviar Pedido', fn:`execAction('prepareOrder','${o.id}')` });
+  if(o.status==='REVISION_PEDIDO') a.push({ label:'Vendedor Revisa Pedido', desc:'¿El pedido es aceptable para el vendedor?', cls:'btn-warn', btnLabel:'Revisar Pedido', fn:`quickAction('review_order','${o.id}')` });
+  if(o.status==='CUMPLIMIENTO_PEDIDO') a.push({ label:'Cumplir Pedido y Facturar', desc:'Cumplir el pedido y preparar la factura.', cls:'btn-green', btnLabel:'Preparar Factura', fn:`execAction('fulfillAndInvoice','${o.id}')` });
+  if(o.status==='RECIBIR_PAGO') a.push({ label:'Confirmar Pago Recibido', desc:'El vendedor confirma el pago del cliente.', cls:'btn-green', btnLabel:'Confirmar Pago', fn:`execAction('receivePayment','${o.id}')` });
+  if(o.status==='PRODUCTO_RECIBIDO') a.push({ label:'Confirmar Entrega', desc:'El agente de recepción confirma el producto recibido.', cls:'btn-green', btnLabel:'Confirmar Entrega', fn:`quickAction('confirm_delivery','${o.id}')` });
+  return a;
+}
+
+// ── QUICK ACTIONS ──
+function quickAction(type, orderId){
+  const o = getO(orderId);
+  const body = document.getElementById('action-body');
+  document.getElementById('action-confirm').onclick = null;
+
+  if(type==='rfq'){
+    document.getElementById('action-title').innerHTML='Preparar RFQ <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>¿Necesita revisión del supervisor?</label>
+      <select id="qa-review"><option value="no">No</option><option value="yes">Sí</option></select></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.prepareRFQ(orderId,'U002','Ana López',document.getElementById('qa-review').value==='yes'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='supervisor'){
+    document.getElementById('action-title').innerHTML='Aprobación Supervisor <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>Decisión</label><select id="qa-sup"><option value="yes">Aprobar</option><option value="no">Rechazar</option></select></div>
+    <div class="form-group"><label>Notas</label><textarea id="qa-notes" placeholder="Comentarios..."></textarea></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.supervisorApprove(orderId,'U003',document.getElementById('qa-sup').value==='yes',document.getElementById('qa-notes').value||'Sin notas'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='seller_decide'){
+    document.getElementById('action-title').innerHTML='Decisión Vendedor <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>¿Decide cotizar?</label><select id="qa-sell"><option value="yes">Sí, cotizar</option><option value="no">No cotizar</option></select></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.sellerDecide(orderId,'U004',document.getElementById('qa-sell').value==='yes'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='quote'){
+    document.getElementById('action-title').innerHTML='Preparar Cotización <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>Impuesto (%)</label><input type="number" id="qa-tax" value="19" min="0" max="100"/></div>
+    <div class="form-group"><label>Notas</label><textarea id="qa-qnotes" placeholder="Condiciones de la cotización..."></textarea></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.prepareQuote(orderId,'U004',o.items,Number(document.getElementById('qa-tax').value),document.getElementById('qa-qnotes').value||'Cotización estándar'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='review_quote'){
+    document.getElementById('action-title').innerHTML='Revisar Cotización <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<p style="color:var(--text3);font-size:13px;margin-bottom:12px;">Proceder con el análisis de la cotización recibida.</p>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.analyzeQuote(orderId,'U002'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='accept_quote'){
+    const q=o.quotes[o.quotes.length-1];
+    document.getElementById('action-title').innerHTML='Aceptar/Rechazar Cotización <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;">
+      <p style="font-size:12px;color:var(--text3);">Total Cotizado</p>
+      <p style="font-size:22px;font-weight:800;font-family:var(--font-mono);color:var(--accent3);">${fmtMoney(q?.total||0)}</p>
+    </div>
+    <div class="form-group"><label>Decisión</label><select id="qa-acc"><option value="yes">Aceptar cotización</option><option value="no">Rechazar (nueva cotización)</option></select></div>
+    <div class="form-group"><label>Notas</label><textarea id="qa-accnotes" placeholder="Motivo..."></textarea></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ if(q) OS.reviewQuote(orderId,q.id,'U002',document.getElementById('qa-acc').value==='yes',document.getElementById('qa-accnotes').value||'Sin notas'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='review_order'){
+    document.getElementById('action-title').innerHTML='Revisión Pedido (Vendedor) <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>¿El pedido es aceptable?</label><select id="qa-ro"><option value="yes">Aceptar pedido</option><option value="no">Rechazar (volver a preparación)</option></select></div>
+    <div class="form-group"><label>Notas</label><textarea id="qa-ronotes" placeholder="Observaciones..."></textarea></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.sellerReviewOrder(orderId,'U004',document.getElementById('qa-ro').value==='yes',document.getElementById('qa-ronotes').value||'Sin notas'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+  else if(type==='confirm_delivery'){
+    document.getElementById('action-title').innerHTML='Confirmar Entrega <button class="modal-close" onclick="closeModal(\'modal-action\')">✕</button>';
+    body.innerHTML=`<div class="form-group"><label>Dirección de Entrega</label><input id="qa-addr" placeholder="Dirección confirmada..." /></div>`;
+    document.getElementById('action-confirm').onclick=()=>{ OS.confirmReceived(orderId,'U005',document.getElementById('qa-addr').value||'Dirección del cliente'); refreshDetail(orderId); closeModal('modal-action'); };
+  }
+
+  openModal('modal-action');
+}
+
+function execAction(type, orderId){
+  if(type==='prepareOrder') OS.prepareOrder(orderId,'U002');
+  else if(type==='fulfillAndInvoice'){ OS.fulfillOrder(orderId,'U004'); OS.prepareInvoice(orderId,'U004'); }
+  else if(type==='receivePayment') OS.receivePayment(orderId,'U004');
+  refreshDetail(orderId);
+}
+
+function refreshDetail(orderId){
+  const o = getO(orderId);
+  renderDetailTabs(o);
+  renderDashboard();
+}
+
+// ── NEW ORDER ──
+function createNewOrder(){
+  const name=document.getElementById('p1-name').value.trim();
+  const qty=parseInt(document.getElementById('p1-qty').value)||1;
+  const price=parseFloat(document.getElementById('p1-price').value)||0;
+  const notes=document.getElementById('new-order-notes').value.trim();
+  if(!name||!price){ alert('Por favor completa el nombre y precio del producto.'); return; }
+  const items=[{ id:uid('I'), productId:uid('P'), productName:name, quantity:qty, unitPrice:price, totalPrice:qty*price }];
+  OS.prepareRequisition('U001',items,notes||'Nuevo pedido creado desde interfaz');
+  closeModal('modal-new-order');
+  document.getElementById('p1-name').value='';
+  document.getElementById('p1-price').value='';
+  document.getElementById('new-order-notes').value='';
+  showPage('orders');
+}
+
+// ── MODALS ──
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('open'); }));
+
+// ── TABS ──
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['detail','actions','history'][i]===tab));
+  document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+}
+
+function refreshData(){ renderPage(currentPage); }
+
+// ── INIT ──
+seedOrders();
+renderDashboard();
+</script>
+</body>
+</html>
